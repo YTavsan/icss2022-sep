@@ -42,8 +42,30 @@ MUL: '*';
 ASSIGNMENT_OPERATOR: ':=';
 
 
-
-
 //--- PARSER: ---
-stylesheet: EOF;
+stylesheet: (assignment | stylerule)* EOF|EOF;
 
+stylerule: selector OPEN_BRACE (assignment | declaration | if)* CLOSE_BRACE;
+
+selector: (class | tag | id);
+
+assignment: variable ASSIGNMENT_OPERATOR expression SEMICOLON;
+
+declaration: property COLON expression SEMICOLON;
+
+if: IF BOX_BRACKET_OPEN (variable | boolean) BOX_BRACKET_CLOSE OPEN_BRACE (assignment | declaration | if)* CLOSE_BRACE else?;
+else: ELSE OPEN_BRACE (assignment | declaration | if)* CLOSE_BRACE;
+
+literal: (scalar | variable | boolean | pixel | percentage | color);
+expression: literal #none| expression MUL expression #multiply | expression PLUS expression #sum | expression MIN expression #sub | variable #none;
+
+class: CLASS_IDENT;
+tag: LOWER_IDENT;
+id: ID_IDENT;
+property: LOWER_IDENT;
+scalar: SCALAR;
+variable: CAPITAL_IDENT;
+boolean: TRUE | FALSE;
+pixel: PIXELSIZE;
+percentage: PERCENTAGE;
+color: COLOR;

@@ -70,6 +70,9 @@ public class Pipeline implements ANTLRErrorListener {
             ParseTreeWalker walker = new ParseTreeWalker();
             walker.walk(listener, parseTree);
 
+            System.out.println("output using Listener: ");
+            System.out.println(listener.getAST().toString());
+
             this.ast = listener.getAST();
 
         } catch (RecognitionException e) {
