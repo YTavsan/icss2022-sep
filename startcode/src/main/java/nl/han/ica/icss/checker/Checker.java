@@ -56,40 +56,6 @@ public class Checker {
         }
     }
 
-    private void checkDeclarationzz(Declaration declaration) {
-        var expressionType = getExpressionType(declaration.expression);
-
-        if (expressionType == ExpressionType.UNDEFINED) {
-            declaration.setError("Variable reference '" + ((VariableReference) declaration.expression).name + "' is not defined");
-            return;
-        }
-
-        if ((declaration.property.name.equals("color") || declaration.property.name.equals("background-color")) && expressionType != ExpressionType.COLOR) {
-            declaration.setError("Color or Background-color property requires a color expression");
-            return;
-        }
-
-        // If the property is width, the expression must be of type pixel or percentage.
-        if (declaration.property.name.equals("width") && expressionType != ExpressionType.PIXEL && expressionType != ExpressionType.PERCENTAGE) {
-            declaration.setError("Width property requires a pixel or percentage expression");
-        }
-    }
-
-    private ExpressionType getExpressionType(Expression expression) {
-        if (expression instanceof BoolLiteral) {
-            return ExpressionType.BOOL;
-        } else if (expression instanceof ColorLiteral) {
-            return ExpressionType.COLOR;
-        } else if (expression instanceof PercentageLiteral) {
-            return ExpressionType.PERCENTAGE;
-        } else if (expression instanceof PixelLiteral) {
-            return ExpressionType.PIXEL;
-        } else if (expression instanceof ScalarLiteral) {
-            return ExpressionType.SCALAR;
-        }
-        return ExpressionType.UNDEFINED;
-    }
-
     // Checks the given declaration for semantic errors. If any are found, they are added to the declaration's error list.'
     private void checkDeclaration(Declaration declaration) {
         ExpressionType expressionType;
