@@ -30,6 +30,7 @@ public class Checker {
             for (ASTNode child : node.getChildren()) {
                 checkNode(child);
             }
+            // Remove global variable scope
             variableTypes.removeFirst();
         } else if (node instanceof Stylerule) {
             // Add stylerule in scope
@@ -95,22 +96,10 @@ public class Checker {
 
         if (expressionType != ExpressionType.UNDEFINED) {
             return expressionType;
-        }
-
-        if (expression instanceof VariableReference) {
-            expressionType = getDefinedVariableReference((VariableReference) expression);
-            if (expressionType == ExpressionType.UNDEFINED) {
-                errorNode.setError("Variable reference '" + ((VariableReference) expression).name + "' is not defined");
-            }
-            return expressionType;
-        }
-
-        if (expression instanceof Operation) {
-            expressionType = getOperationExpressionType((Operation) expression);
-            if (expressionType == ExpressionType.UNDEFINED) {
-                errorNode.setError("Operation '" + expression + "' is not valid");
-            }
-            return expressionType;
+        } else if (expression instanceof VariableReference) {
+            return getDefinedVariableReference((VariableReference) expression);
+        } else if (expression instanceof Operation) {
+            return getOperationExpressionType((Operation) expression);
         }
 
         errorNode.setError("Expression '" + expression + "' must be a literal, variable reference, or operation");
