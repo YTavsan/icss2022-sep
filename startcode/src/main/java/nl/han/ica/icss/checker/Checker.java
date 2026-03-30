@@ -28,7 +28,7 @@ public class Checker {
                 checkStylerule((Stylerule) node);
                 variableTypes.removeFirst();
             } else if (node instanceof VariableAssignment) {
-                checkVariableAssignment((VariableAssignment) node);
+                putCheckVariableAssignment((VariableAssignment) node);
             } else if (node instanceof IfClause) {
                 // TODO checkIfClause((IfClause) node);
             } else if (node instanceof ElseClause) {
@@ -44,7 +44,7 @@ public class Checker {
                 checkDeclaration((Declaration) node);
             }
             else if (node instanceof VariableAssignment) {
-                checkVariableAssignment((VariableAssignment) node);
+                putCheckVariableAssignment((VariableAssignment) node);
             }
         }
     }
@@ -82,10 +82,12 @@ public class Checker {
         }
     }
 
-    private void checkVariableAssignment(VariableAssignment variableAssignment) {
+    // Puts the given variable assignment in the current scope.
+    private void putCheckVariableAssignment(VariableAssignment variableAssignment) {
         variableTypes.getFirst().put(variableAssignment.name.name, expressionType(variableAssignment.expression));
     }
 
+    // Returns the type of the given variable reference.
     private ExpressionType getVariableReference(VariableReference variableReference) {
         for (int i = variableTypes.getSize() - 1; i >= 0; i--) {
             if (variableTypes.get(i).containsKey(variableReference.name)) {
