@@ -19,72 +19,47 @@ public class Checker {
     // Checks the given AST for semantic errors. If any are found, they are added to the AST's error list.
     public void check(AST ast) {
         variableTypes = new HANLinkedList<>();
-        checkStyleSheet(ast.root);
+        checkNode(ast.root);
     }
 
-    // Checks the given stylesheet for semantic errors. If any are found, they are added to the stylesheet's error list.'
-    private void checkStyleSheet(Stylesheet stylesheet) {
-        variableTypes.addFirst(new HashMap<>());
-        for (var node : stylesheet.getChildren()) {
-            if (node instanceof Stylerule) {
-                // Create a new scope for the stylerule.
-                variableTypes.addFirst(new HashMap<>());
-                // Check the stylerule.
-                checkStylerule((Stylerule) node);
-                // Remove the scope for the stylerule.
-                variableTypes.removeFirst();
-            } else if (node instanceof VariableAssignment) {
-                setScopedVariableAssigment((VariableAssignment) node);
-            } else if (node instanceof IfClause) {
-                // TODO checkIfClause((IfClause) node);
-                System.out.println("IF CLAUSE");
-            } else if (node instanceof ElseClause) {
-                // TODO checkElseClause((ElseClause) node);
-                System.out.println("ELSE CLAUSE");
+    // Recursively checks the given AST node and its children for semantic errors, managing variable scopes as needed.
+    private void checkNode(ASTNode node) {
+        if (node instanceof Stylesheet) {
+            // global variable scope
+            variableTypes.addFirst(new HashMap<>());
+            for (ASTNode child : node.getChildren()) {
+                checkNode(child);
+            }
+            variableTypes.removeFirst();
+        } else if (node instanceof Stylerule) {
+            // Add stylerule in scope
+            variableTypes.addFirst(new HashMap<>());
+            for (ASTNode child : node.getChildren()) {
+                checkNode(child);
+            }
+            // Remove stylerule that is no longer in scope
+            variableTypes.removeFirst();
+        } else if (node instanceof Declaration) {
+            checkDeclaration((Declaration) node);
+        } else if (node instanceof VariableAssignment) {
+            setScopedVariableAssignment((VariableAssignment) node);
+        } else if (node instanceof IfClause) {
+            // TODO checkIfClause((IfClause) node);
+        } else if (node instanceof ElseClause) {
+            // TODO checkElseClause((ElseClause) node);
+        } else {
+            // For any other type of node, just check its children.
+            for (ASTNode child : node.getChildren()) {
+                checkNode(child);
             }
         }
     }
 
-    // Checks the given stylerule for semantic errors. If any are found, they are added to the stylerule's error list.'
-    private void checkStylerule(Stylerule stylerule) {
-        for (var node : stylerule.getChildren()) {
-            if (node instanceof Declaration) {
-                checkDeclaration((Declaration) node);
-            } else if (node instanceof VariableAssignment) {
-                setScopedVariableAssigment((VariableAssignment) node);
-            }
-        }
-    }
-
-    // Checks the given declaration for semantic errors. If any are found, they are added to the declaration's error list.'
+    // Function that checks a declaration for semantic errors.
     private void checkDeclaration(Declaration declaration) {
-        ExpressionType expressionType;
-
-        // Get the type of the expression.
-        expressionType = getSimpleExpressionType(declaration.expression);
-
-        // If the expression type is undefined, it might be a variable reference or an operation.
+        ExpressionType expressionType = resolveExpressionType(declaration.expression, declaration);
         if (expressionType == ExpressionType.UNDEFINED) {
-            // it might be a variable reference. Try to get the type of the variable reference.
-            if (declaration.expression instanceof VariableReference) {
-                expressionType = getDefinedVariableReference((VariableReference) declaration.expression);
-                if (expressionType == ExpressionType.UNDEFINED) {
-                    declaration.setError("Variable reference '" + ((VariableReference) declaration.expression).name + "' is not defined");
-                    return;
-                }
-            }
-            // it might be an operation. Try to get the type of the operation.
-            else if (declaration.expression instanceof Operation) {
-                System.out.println("OPERATION");
-                expressionType = getOperationExpressionType((Operation) declaration.expression);
-                if (expressionType == ExpressionType.UNDEFINED) {
-                    declaration.setError("Operation '" + declaration.property.name + "' is not valid");
-                    return;
-                }
-            } else {
-                declaration.setError("Expression '" + declaration.property.name + "'must be a variable reference");
-                return;
-            }
+            return;
         }
 
         // If the property is color or background-color, the expression must be of type color.
@@ -99,13 +74,14 @@ public class Checker {
         }
     }
 
-    private void setScopedVariableAssigment(VariableAssignment variableAssignment) {
-        variableTypes.getFirst().put(variableAssignment.name.name, getSimpleExpressionType(variableAssignment.expression));
+    private void setScopedVariableAssignment(VariableAssignment variableAssignment) {
+        ExpressionType type = resolveExpressionType(variableAssignment.expression, variableAssignment);
+        variableTypes.getFirst().put(variableAssignment.name.name, type);
     }
 
     // Returns the type of the given variable reference.
     private ExpressionType getDefinedVariableReference(VariableReference variableReference) {
-        for (int i = variableTypes.getSize() - 1; i >= 0; i--) {
+        for (int i = 0; i < variableTypes.getSize(); i++) {
             if (variableTypes.get(i).containsKey(variableReference.name)) {
                 return variableTypes.get(i).get(variableReference.name);
             }
@@ -113,42 +89,42 @@ public class Checker {
         return ExpressionType.UNDEFINED;
     }
 
-    // Returns the type of the given operation.
-    private ExpressionType resolveExpressionType(Expression expression, Operation currentOperation, boolean isLeftSide) {
-        ExpressionType type = getSimpleExpressionType(expression);
+    // Returns the type of the given expression, resolving variables and operations recursively.
+    private ExpressionType resolveExpressionType(Expression expression, ASTNode errorNode) {
+        ExpressionType expressionType = getSimpleExpressionType(expression);
 
-        if (type != ExpressionType.UNDEFINED) {
-            return type;
+        if (expressionType != ExpressionType.UNDEFINED) {
+            return expressionType;
         }
 
         if (expression instanceof VariableReference) {
-            type = getDefinedVariableReference((VariableReference) expression);
-            if (type == ExpressionType.UNDEFINED) {
-                currentOperation.setError("Variable reference '" + ((VariableReference) expression).name + "' is not defined");
+            expressionType = getDefinedVariableReference((VariableReference) expression);
+            if (expressionType == ExpressionType.UNDEFINED) {
+                errorNode.setError("Variable reference '" + ((VariableReference) expression).name + "' is not defined");
             }
-            return type;
+            return expressionType;
         }
 
         if (expression instanceof Operation) {
-            type = getOperationExpressionType((Operation) expression);
-            if (type == ExpressionType.UNDEFINED) {
-                currentOperation.setError("Operation '" + expression + "' is not valid");
+            expressionType = getOperationExpressionType((Operation) expression);
+            if (expressionType == ExpressionType.UNDEFINED) {
+                errorNode.setError("Operation '" + expression + "' is not valid");
             }
-            return type;
+            return expressionType;
         }
 
-        currentOperation.setError("Expression '" + expression + "' must be a variable reference or an operation");
+        errorNode.setError("Expression '" + expression + "' must be a literal, variable reference, or operation");
         return ExpressionType.UNDEFINED;
     }
 
     // Gets the type of the given operation by checking the types of its left-hand side and right-hand side expressions and applying the rules for valid operations.
     private ExpressionType getOperationExpressionType(Operation operation) {
-        ExpressionType lhsType = resolveExpressionType(operation.lhs, operation, true);
+        ExpressionType lhsType = resolveExpressionType(operation.lhs, operation);
         if (lhsType == ExpressionType.UNDEFINED) {
             return ExpressionType.UNDEFINED;
         }
 
-        ExpressionType rhsType = resolveExpressionType(operation.rhs, operation, false);
+        ExpressionType rhsType = resolveExpressionType(operation.rhs, operation);
         if (rhsType == ExpressionType.UNDEFINED) {
             return ExpressionType.UNDEFINED;
         }
