@@ -28,7 +28,7 @@ public class Checker {
                 checkStylerule((Stylerule) node);
                 variableTypes.removeFirst();
             } else if (node instanceof VariableAssignment) {
-                // TODO checkVariableAssignment((VariableAssignment) node);
+                checkVariableAssignment((VariableAssignment) node);
             } else if (node instanceof IfClause) {
                 // TODO checkIfClause((IfClause) node);
             } else if (node instanceof ElseClause) {
@@ -43,6 +43,9 @@ public class Checker {
             if (node instanceof Declaration) {
                 checkDeclaration((Declaration) node);
             }
+            else if (node instanceof VariableAssignment) {
+                checkVariableAssignment((VariableAssignment) node);
+            }
         }
     }
 
@@ -52,14 +55,25 @@ public class Checker {
 
         expressionType = expressionType(declaration.expression);
 
-        // If the expression type is undefined, the declaration is invalid.
+        // this must be a variable reference
         if (expressionType == ExpressionType.UNDEFINED) {
-            declaration.setError("Undefined expression type");
+            if (declaration.expression instanceof VariableReference) {
+                expressionType = getVariableReference((VariableReference) declaration.expression);
+                if (expressionType == ExpressionType.UNDEFINED) {
+                    declaration.setError("Variable reference '" + ((VariableReference) declaration.expression).name + "' is not defined");
+                    return;
+                }
+            }
+            else {
+                declaration.setError("Expression must be a variable reference");
+                return;
+            }
         }
 
         // If the property is color or background-color, the expression must be of type color.
         if ((declaration.property.name.equals("color") || declaration.property.name.equals("background-color")) && expressionType != ExpressionType.COLOR) {
             declaration.setError("Color or Background-color property requires a color expression");
+            return;
         }
 
         // If the property is width, the expression must be of type pixel or percentage.
@@ -68,6 +82,33 @@ public class Checker {
         }
     }
 
+    private void checkVariableAssignment(VariableAssignment variableAssignment) {
+        variableTypes.getFirst().put(variableAssignment.name.name, expressionType(variableAssignment.expression));
+    }
+
+    private ExpressionType getVariableReference(VariableReference variableReference) {
+        for (int i = variableTypes.getSize() - 1; i >= 0; i--) {
+            if (variableTypes.get(i).containsKey(variableReference.name)) {
+                return variableTypes.get(i).get(variableReference.name);
+            }
+        }
+        return ExpressionType.UNDEFINED;
+    }
+
+    private void checkIfClause(IfClause ifClause) {
+        if (ifClause.conditionalExpression instanceof VariableReference) {
+
+        }
+        if(ifClause.conditionalExpression instanceof BoolLiteral) {
+            if (!((BoolLiteral) ifClause.conditionalExpression).value) {
+                ifClause.setError("If clause condition is false, the block will never be executed.");
+            }
+        } else {
+            ifClause.setError("If clause condition must be a boolean literal or variable reference.");
+        }
+    }
+
+    // Returns the type of the given expression.
     private ExpressionType expressionType(Expression expression) {
         if (expression instanceof PixelLiteral) {
             return ExpressionType.PIXEL;
