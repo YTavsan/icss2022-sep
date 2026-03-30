@@ -5,6 +5,10 @@ import nl.han.ica.icss.ast.literals.ColorLiteral;
 import nl.han.ica.icss.ast.literals.PercentageLiteral;
 import nl.han.ica.icss.ast.literals.PixelLiteral;
 import nl.han.ica.icss.ast.selectors.TagSelector;
+import nl.han.ica.icss.ast.operations.AddOperation;
+import nl.han.ica.icss.ast.operations.MultiplyOperation;
+import nl.han.ica.icss.ast.operations.SubtractOperation;
+import nl.han.ica.icss.ast.literals.ScalarLiteral;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -402,5 +406,441 @@ public class CheckerTest {
         ArrayList<SemanticError> errors = ast.getErrors();
         assertTrue(errors.isEmpty(),
                 "Empty stylesheet should not have errors");
+    }
+
+    @Test
+    public void testCH07ColorTypeInAddOperationShouldNotBeAllowed() {
+        // Setup: Addition operation with color operand
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("p"));
+
+        Declaration declaration = new Declaration("width");
+        AddOperation addOp = new AddOperation();
+        addOp.lhs = new ColorLiteral("#ff0000");
+        addOp.rhs = new PixelLiteral(10);
+        declaration.expression = addOp;
+        stylerule.body.add(declaration);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.stream().anyMatch(e -> e.toString().toLowerCase().contains("color") && e.toString().toLowerCase().contains("operation")),
+                "Color types should not be allowed in operations");
+    }
+
+    @Test
+    public void testCH03ColorTypeInSubtractOperationShouldNotBeAllowed() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("div"));
+
+        Declaration declaration = new Declaration("width");
+        SubtractOperation subOp = new SubtractOperation();
+        subOp.lhs = new PixelLiteral(50);
+        subOp.rhs = new ColorLiteral("#000000");
+        declaration.expression = subOp;
+        stylerule.body.add(declaration);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.stream().anyMatch(e -> e.toString().toLowerCase().contains("color") && e.toString().toLowerCase().contains("operation")),
+                "Color types should not be allowed in operations");
+    }
+
+    @Test
+    public void testCH03ColorTypeInMultiplyOperationShouldNotBeAllowed() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("a"));
+
+        Declaration declaration = new Declaration("width");
+        MultiplyOperation mulOp = new MultiplyOperation();
+        mulOp.lhs = new ColorLiteral("#ff0000");
+        mulOp.rhs = new ScalarLiteral(3);
+        declaration.expression = mulOp;
+        stylerule.body.add(declaration);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.stream().anyMatch(e -> e.toString().toLowerCase().contains("color") && e.toString().toLowerCase().contains("operation")),
+                "Color types should not be allowed in operations");
+    }
+
+    @Test
+    public void testCH02AdditionPixelPlusPixelShouldMatch() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("p"));
+
+        Declaration declaration = new Declaration("width");
+        AddOperation addOp = new AddOperation();
+        addOp.lhs = new PixelLiteral(100);
+        addOp.rhs = new PixelLiteral(50);
+        declaration.expression = addOp;
+        stylerule.body.add(declaration);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.isEmpty(),
+                "Addition of same types (pixel + pixel) should be allowed");
+    }
+
+    @Test
+    public void testCH02AdditionPercentagePlusPercentageShouldMatch() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("div"));
+
+        Declaration declaration = new Declaration("width");
+        AddOperation addOp = new AddOperation();
+        addOp.lhs = new PercentageLiteral(50);
+        addOp.rhs = new PercentageLiteral(25);
+        declaration.expression = addOp;
+        stylerule.body.add(declaration);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.isEmpty(),
+                "Addition of same types (percentage + percentage) should be allowed");
+    }
+
+    @Test
+    public void testCH02AdditionPixelPlusPercentageShouldNotMatch() {
+        // Setup: Addition of different types (pixel + percentage)
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("span"));
+
+        Declaration declaration = new Declaration("width");
+        AddOperation addOp = new AddOperation();
+        addOp.lhs = new PixelLiteral(100);
+        addOp.rhs = new PercentageLiteral(50);
+        declaration.expression = addOp;
+        stylerule.body.add(declaration);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.stream().anyMatch(e -> e.toString().toLowerCase().contains("require") && e.toString().toLowerCase().contains("same type")),
+                "Addition requires operands of same type");
+    }
+
+    @Test
+    public void testCH02SubtractionPixelMinusPixelShouldMatch() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("p"));
+
+        Declaration declaration = new Declaration("width");
+        SubtractOperation subOp = new SubtractOperation();
+        subOp.lhs = new PixelLiteral(100);
+        subOp.rhs = new PixelLiteral(50);
+        declaration.expression = subOp;
+        stylerule.body.add(declaration);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.isEmpty(),
+                "Subtraction of same types (pixel - pixel) should be allowed");
+    }
+
+    @Test
+    public void testCH02SubtractionPercentageMinusPercentageShouldMatch() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("a"));
+
+        Declaration declaration = new Declaration("width");
+        SubtractOperation subOp = new SubtractOperation();
+        subOp.lhs = new PercentageLiteral(75);
+        subOp.rhs = new PercentageLiteral(25);
+        declaration.expression = subOp;
+        stylerule.body.add(declaration);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.isEmpty(),
+                "Subtraction of same types (percentage - percentage) should be allowed");
+    }
+
+    @Test
+    public void testCH02SubtractionPixelMinusPercentageShouldNotMatch() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("section"));
+
+        Declaration declaration = new Declaration("width");
+        SubtractOperation subOp = new SubtractOperation();
+        subOp.lhs = new PixelLiteral(100);
+        subOp.rhs = new PercentageLiteral(50);
+        declaration.expression = subOp;
+        stylerule.body.add(declaration);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.stream().anyMatch(e -> e.toString().toLowerCase().contains("require") && e.toString().toLowerCase().contains("same type")),
+                "Subtraction requires operands of same type");
+    }
+
+    @Test
+    public void testCH02MultiplicationPercentageTimesScalarShouldMatch() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("p"));
+
+        Declaration declaration = new Declaration("width");
+        MultiplyOperation mulOp = new MultiplyOperation();
+        mulOp.lhs = new PercentageLiteral(20);
+        mulOp.rhs = new ScalarLiteral(3);
+        declaration.expression = mulOp;
+        stylerule.body.add(declaration);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.isEmpty(),
+                "Multiplication with one scalar operand should be allowed (20% * 3)");
+    }
+
+    @Test
+    public void testCH02MultiplicationScalarTimesPixelShouldMatch() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("div"));
+
+        Declaration declaration = new Declaration("width");
+        MultiplyOperation mulOp = new MultiplyOperation();
+        mulOp.lhs = new ScalarLiteral(5);
+        mulOp.rhs = new PixelLiteral(10);
+        declaration.expression = mulOp;
+        stylerule.body.add(declaration);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.isEmpty(),
+                "Multiplication with one scalar operand should be allowed (5 * 10px)");
+    }
+
+    @Test
+    public void testCH02MultiplicationScalarTimesScalarShouldMatch() {
+        // Setup: Multiplication with both scalars (scalar * scalar)
+
+        // While scalar * scalar is a valid operation it's not for a width proeperty
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("a"));
+
+        Declaration declaration = new Declaration("width");
+        MultiplyOperation mulOp = new MultiplyOperation();
+        mulOp.lhs = new ScalarLiteral(4);
+        mulOp.rhs = new ScalarLiteral(2);
+        declaration.expression = mulOp;
+        stylerule.body.add(declaration);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        // The scalar * scalar operation itself is valid, but using SCALAR result for width property should fail
+        assertTrue(errors.stream().anyMatch(e -> e.toString().toLowerCase().contains("width") && e.toString().toLowerCase().contains("pixel or percentage")),
+                "Width property cannot use scalar result (scalar * scalar = scalar)");
+    }
+
+    @Test
+    public void testCH02MultiplicationPixelTimesPixelShouldNotMatch() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("p"));
+
+        Declaration declaration = new Declaration("width");
+        MultiplyOperation mulOp = new MultiplyOperation();
+        mulOp.lhs = new PixelLiteral(10);
+        mulOp.rhs = new PixelLiteral(5);
+        declaration.expression = mulOp;
+        stylerule.body.add(declaration);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.stream().anyMatch(e -> e.toString().contains("scalar") || e.toString().contains("one scalar")),
+                "Multiplication without scalar operand should not be allowed (2px * 2px not allowed)");
+    }
+
+    @Test
+    public void testCH02MultiplicationPercentageTimesPercentageShouldNotMatch() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("div"));
+
+        Declaration declaration = new Declaration("width");
+        MultiplyOperation mulOp = new MultiplyOperation();
+        mulOp.lhs = new PercentageLiteral(50);
+        mulOp.rhs = new PercentageLiteral(75);
+        declaration.expression = mulOp;
+        stylerule.body.add(declaration);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.stream().anyMatch(e -> e.toString().contains("scalar") || e.toString().contains("one scalar")),
+                "Multiplication without scalar operand should not be allowed");
+    }
+
+    @Test
+    public void testCH02AdditionWithVariablesOfSameTypeShouldMatch() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+
+        VariableAssignment varAssignment1 = new VariableAssignment();
+        varAssignment1.name = new VariableReference("Width1");
+        varAssignment1.expression = new PixelLiteral(100);
+        stylesheet.body.add(varAssignment1);
+
+        VariableAssignment varAssignment2 = new VariableAssignment();
+        varAssignment2.name = new VariableReference("Width2");
+        varAssignment2.expression = new PixelLiteral(50);
+        stylesheet.body.add(varAssignment2);
+
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("p"));
+
+        Declaration declaration = new Declaration("width");
+        AddOperation addOp = new AddOperation();
+        addOp.lhs = new VariableReference("Width1");
+        addOp.rhs = new VariableReference("Width2");
+        declaration.expression = addOp;
+        stylerule.body.add(declaration);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.isEmpty(),
+                "Addition of variables with same type should be allowed");
+    }
+
+    @Test
+    public void testCH02MultiplicationWithVariableScalarShouldMatch() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+
+        VariableAssignment varAssignment = new VariableAssignment();
+        varAssignment.name = new VariableReference("Multiplier");
+        varAssignment.expression = new ScalarLiteral(3);
+        stylesheet.body.add(varAssignment);
+
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("div"));
+
+        Declaration declaration = new Declaration("width");
+        MultiplyOperation mulOp = new MultiplyOperation();
+        mulOp.lhs = new VariableReference("Multiplier");
+        mulOp.rhs = new PixelLiteral(20);
+        declaration.expression = mulOp;
+        stylerule.body.add(declaration);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.isEmpty(),
+                "Multiplication with variable scalar should be allowed");
     }
 }
