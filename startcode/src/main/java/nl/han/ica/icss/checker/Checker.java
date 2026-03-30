@@ -97,7 +97,11 @@ public class Checker {
         if (expressionType != ExpressionType.UNDEFINED) {
             return expressionType;
         } else if (expression instanceof VariableReference) {
-            return getDefinedVariableReference((VariableReference) expression);
+            expressionType = getDefinedVariableReference((VariableReference) expression);
+            if (expressionType == ExpressionType.UNDEFINED) {
+                errorNode.setError("Variable reference '" + ((VariableReference) expression).name + "' is not defined");
+            }
+            return expressionType;
         } else if (expression instanceof Operation) {
             return getOperationExpressionType((Operation) expression);
         }
