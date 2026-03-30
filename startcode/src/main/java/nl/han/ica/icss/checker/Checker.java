@@ -75,6 +75,7 @@ public class Checker {
         }
     }
 
+    // Sets the type of the given variable assignment in the current variable scope.
     private void setScopedVariableAssignment(VariableAssignment variableAssignment) {
         ExpressionType type = resolveExpressionType(variableAssignment.expression, variableAssignment);
         variableTypes.getFirst().put(variableAssignment.name.name, type);
@@ -94,18 +95,22 @@ public class Checker {
     private ExpressionType resolveExpressionType(Expression expression, ASTNode errorNode) {
         ExpressionType expressionType = getSimpleExpressionType(expression);
 
+        // If the expression is already a simple type, return it
         if (expressionType != ExpressionType.UNDEFINED) {
             return expressionType;
-        } else if (expression instanceof VariableReference) {
+        } // else if the expression is a variable reference, check if it is defined and return its type
+        else if (expression instanceof VariableReference) {
             expressionType = getDefinedVariableReference((VariableReference) expression);
+            // If the variable is not defined, set an error and return UNDEFINED
             if (expressionType == ExpressionType.UNDEFINED) {
                 errorNode.setError("Variable reference '" + ((VariableReference) expression).name + "' is not defined");
             }
             return expressionType;
-        } else if (expression instanceof Operation) {
+        } // else if the expression is an operation, check its type and return it
+        else if (expression instanceof Operation) {
             return getOperationExpressionType((Operation) expression);
         }
-
+        // If the expression is neither a literal, variable reference, nor an operation, set an error and return UNDEFINED
         errorNode.setError("Expression '" + expression + "' must be a literal, variable reference, or operation");
         return ExpressionType.UNDEFINED;
     }
@@ -113,20 +118,22 @@ public class Checker {
     // Gets the type of the given operation by checking the types of its left-hand side and right-hand side expressions and applying the rules for valid operations.
     private ExpressionType getOperationExpressionType(Operation operation) {
         ExpressionType lhsType = resolveExpressionType(operation.lhs, operation);
+        // If the left-hand side is UNDEFINED, the operation is invalid and should be set to UNDEFINED
         if (lhsType == ExpressionType.UNDEFINED) {
             return ExpressionType.UNDEFINED;
         }
-
+        // If the right-hand side is UNDEFINED, the operation is invalid and should be set to UNDEFINED
         ExpressionType rhsType = resolveExpressionType(operation.rhs, operation);
         if (rhsType == ExpressionType.UNDEFINED) {
             return ExpressionType.UNDEFINED;
         }
-
+        // If the operation is a color operation, the operation is invalid and should be set to UNDEFINED
         if (lhsType == ExpressionType.COLOR || rhsType == ExpressionType.COLOR) {
             operation.setError("Operations on colors are not allowed");
             return ExpressionType.UNDEFINED;
         }
-
+        // If the operation is an Addition or a Subtraction, both sides must be of the same type and either pixel,
+        // percentage, or scalar. If this is not the case, the operation is invalid and should be set to UNDEFINED
         if (operation instanceof AddOperation || operation instanceof SubtractOperation) {
             if (lhsType == rhsType && (lhsType == ExpressionType.PIXEL
                     || lhsType == ExpressionType.PERCENTAGE
@@ -136,7 +143,7 @@ public class Checker {
             operation.setError("Addition and subtraction require both operands to be the same type");
             return ExpressionType.UNDEFINED;
         }
-
+        // If the operation is a Multiplication, the left-hand side must be a scalar and the right-hand side must be pixel, percentage, or scalar.
         if (operation instanceof MultiplyOperation) {
             if (lhsType == ExpressionType.SCALAR && rhsType == ExpressionType.PIXEL
                     || lhsType == ExpressionType.PIXEL && rhsType == ExpressionType.SCALAR) {
