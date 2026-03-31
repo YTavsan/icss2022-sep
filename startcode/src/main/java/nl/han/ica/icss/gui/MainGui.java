@@ -30,7 +30,36 @@ public class MainGui extends Application {
 
     private final static String title = "ICSS Tool September 2020, version 1";
     //Example files (for menu)
-    private final static List<String> examples = Arrays.asList("level0.icss","level1.icss","level2.icss","level3.icss");
+    private final static List<String> examples = Arrays.asList(
+        "level0.icss",
+        "level0_emptyTag.icss",
+        "level0_noChildSelector.icss",
+        "level0_noCombinedSelector.icss",
+        "level0_nonAllowedProperty.icss",
+        "level0_wrongBackGroundColorType.icss",
+        "level0_wrongPixelType.icss",
+        "level0_wrongSelectorCase.icss",
+        "level1.icss",
+        "level1_outOfScopeVariable.icss",
+        "level1_referencedVariable.icss",
+        "level1_undeclaredVariable.icss",
+        "level1_wrongBooleanType.icss",
+        "level1_wrongVariableAssignment.icss",
+        "level1_wrongVariableSyntax.icss",
+        "level2.icss",
+        "level2_additionPixelAndPixel.icss",
+        "level2_additionVariableAndPixel.icss",
+        "level2_multipleAdditionAndMultiplication.icss",
+        "level2_multiplicationPercentageAndScalar.icss",
+        "level2_multiplicationPixelAndScalar.icss",
+        "level2_noAllowedDivision.icss",
+        "level2_wrongAdditionPercentageAndPixel.icss",
+        "level2_wrongAdditionScalarAndPixel.icss",
+        "level2_wrongAdditionScalarAndScalar.icss",
+        "level2_wrongAdditionVariableAndScalar.icss",
+        "level2_wrongColorOperation.icss",
+        "level3.icss"
+    );
 
     //UI Components
     private InputPane inputPane;
