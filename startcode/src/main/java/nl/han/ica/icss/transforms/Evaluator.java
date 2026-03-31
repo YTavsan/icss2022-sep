@@ -51,21 +51,17 @@ public class Evaluator implements Transform {
             Literal condition = evaluateExpression(ifClause.conditionalExpression);
             ifClause.conditionalExpression = condition;
             if (condition instanceof BoolLiteral && ((BoolLiteral) condition).value) {
-                variableValues.addFirst(new HashMap<>());
                 for (ASTNode child : ifClause.body) {
                     evaluateNode(child);
                 }
-                variableValues.removeFirst();
             } else if (ifClause.elseClause != null) {
                 evaluateNode(ifClause.elseClause);
             }
         } else if (node instanceof ElseClause) {
-            ElseClause ec = (ElseClause) node;
-            variableValues.addFirst(new HashMap<>());
-            for (ASTNode child : ec.body) {
+            ElseClause elseClause = (ElseClause) node;
+            for (ASTNode child : elseClause.body) {
                 evaluateNode(child);
             }
-            variableValues.removeFirst();
         } else {
             // For other nodes keep going through the children.
             for (ASTNode child : node.getChildren()) {
