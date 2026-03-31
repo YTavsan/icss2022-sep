@@ -16,7 +16,7 @@ public class Checker {
 
     private IHANLinkedList<HashMap<String, ExpressionType>> variableTypes;
 
-    private String[] allowedProperties = new String[] {"color", "background-color", "width", "height"};
+    private final String[] allowedProperties = new String[] {"color", "background-color", "width", "height"};
 
     // Checks the given AST for semantic errors. If any are found, they are added to the AST's error list.
     public void check(AST ast) {
@@ -65,6 +65,7 @@ public class Checker {
             return;
         }
 
+        // Check if the property is a valid property.
         if(!java.util.Arrays.asList(allowedProperties).contains(declaration.property.name)) {
             declaration.setError("Property '" + declaration.property.name + "' is not a valid property");
             return;
@@ -77,7 +78,7 @@ public class Checker {
         }
 
         // If the property is width, the expression must be of type pixel or percentage.
-        if (declaration.property.name.equals("width") && expressionType != ExpressionType.PIXEL && expressionType != ExpressionType.PERCENTAGE) {
+        if ((declaration.property.name.equals("width") || declaration.property.name.equals("height")) && expressionType != ExpressionType.PIXEL && expressionType != ExpressionType.PERCENTAGE) {
             declaration.setError("Width property requires a pixel or percentage expression");
         }
     }

@@ -377,7 +377,7 @@ public class CheckerTest {
         colorDecl.expression = new VariableReference("LinkColor");
         stylerule.body.add(colorDecl);
 
-        Declaration widthDecl = new Declaration("a");
+        Declaration widthDecl = new Declaration("width");
         widthDecl.expression = new VariableReference("PageWidth");
         stylerule.body.add(widthDecl);
 
@@ -391,6 +391,28 @@ public class CheckerTest {
         ArrayList<SemanticError> errors = ast.getErrors();
         assertTrue(errors.isEmpty(),
                 "Multiple declarations with correct types should not have errors");
+    }
+    @Test
+    public void testPropertyMustBeOfAllowedProperties() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("a"));
+
+        Declaration declaration = new Declaration("margin");
+        declaration.expression = new ColorLiteral("#ff0000");
+        stylerule.body.add(declaration);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.stream().anyMatch(e -> e.toString().contains("Property") && e.toString().contains("is not a valid property")),
+                "Width property cannot use color variable");
     }
 
     @Test
@@ -409,7 +431,7 @@ public class CheckerTest {
     }
 
     @Test
-    public void testCH07ColorTypeInAddOperationShouldNotBeAllowed() {
+    public void testCH03ColorTypeInAddOperationShouldNotBeAllowed() {
         // Setup: Addition operation with color operand
         Stylesheet stylesheet = new Stylesheet();
         Stylerule stylerule = new Stylerule();
