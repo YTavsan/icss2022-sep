@@ -16,6 +16,8 @@ public class Checker {
 
     private IHANLinkedList<HashMap<String, ExpressionType>> variableTypes;
 
+    private String[] allowedProperties = new String[] {"color", "background-color", "width", "height"};
+
     // Checks the given AST for semantic errors. If any are found, they are added to the AST's error list.
     public void check(AST ast) {
         variableTypes = new HANLinkedList<>();
@@ -60,6 +62,11 @@ public class Checker {
     private void checkDeclaration(Declaration declaration) {
         ExpressionType expressionType = resolveExpressionType(declaration.expression, declaration);
         if (expressionType == ExpressionType.UNDEFINED) {
+            return;
+        }
+
+        if(!java.util.Arrays.asList(allowedProperties).contains(declaration.property.name)) {
+            declaration.setError("Property '" + declaration.property.name + "' is not a valid property");
             return;
         }
 
