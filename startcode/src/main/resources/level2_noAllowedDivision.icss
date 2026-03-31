@@ -1,0 +1,4 @@
+p {
+	background-color: #ffffff;
+	width: 20px / 10px;
+}

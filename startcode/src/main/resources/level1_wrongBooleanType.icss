@@ -1,0 +1,8 @@
+ParWidth := 500px;
+AdjustColor := true;
+UseLinkColor := FALSE;
+
+p {
+	background-color: #ffffff;
+	width: ParWidth;
+}

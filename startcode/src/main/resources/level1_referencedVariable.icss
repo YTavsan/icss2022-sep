@@ -1,0 +1,6 @@
+ParWidth := 500px;
+FooWidth := ParWidth;
+
+p {
+	width: FooWidth;
+}

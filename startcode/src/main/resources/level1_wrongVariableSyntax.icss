@@ -1,0 +1,6 @@
+parWidth := 500px;
+
+p {
+	background-color: #ffffff;
+	width: parWidth;
+}

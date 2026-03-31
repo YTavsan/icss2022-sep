@@ -1,0 +1,8 @@
+p {
+    ParWidth := 500px;
+	width: ParWidth;
+}
+
+a {
+    width: ParWidth;
+}

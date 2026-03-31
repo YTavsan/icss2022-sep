@@ -1,0 +1,4 @@
+p > a {
+	background-color: #ffffff;
+	width: 500px;
+}

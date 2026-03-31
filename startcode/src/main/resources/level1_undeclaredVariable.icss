@@ -1,0 +1,6 @@
+ParWidth := 500px;
+
+p {
+	background-color: LinkColor;
+	width: ParWidth;
+}
