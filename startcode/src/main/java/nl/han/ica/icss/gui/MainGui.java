@@ -58,7 +58,13 @@ public class MainGui extends Application {
         "level2_wrongAdditionScalarAndScalar.icss",
         "level2_wrongAdditionVariableAndScalar.icss",
         "level2_wrongColorOperation.icss",
-        "level3.icss"
+        "level3.icss",
+        "level3_ifElseWithBooleanLiteral.icss",
+        "level3_ifElseWithVariableBooleanLiteral.icss",
+        "level3_ifWithBooleanLiteral.icss",
+        "level3_ifWithVariableBooleanLiteral.icss",
+        "level3_ifWithWrongType.icss",
+        "level3_ifWithWrongVariableType.icss"
     );
 
     //UI Components

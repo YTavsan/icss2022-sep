@@ -1,0 +1,18 @@
+LinkColor := #ff0000;
+ParWidth := 500px;
+AdjustColor := FALSE;
+UseLinkColor := FALSE;
+
+p {
+	background-color: #ffffff;
+	width: ParWidth;
+	ChangedColor:= AdjustColor;
+	if[ChangedColor] {
+	    color: #124532;
+	}
+	else {
+	    color: #ff0000;
+	}
+	height: 20px;
+}
+
