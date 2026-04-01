@@ -54,8 +54,6 @@ public class Checker {
                 checkNode(child);
             }
             variableTypes.removeFirst();
-        } else if (node instanceof ElseClause) {
-            // TODO checkElseClause((ElseClause) node);
         } else {
             // For any other type of node, just check its children.
             for (ASTNode child : node.getChildren()) {
