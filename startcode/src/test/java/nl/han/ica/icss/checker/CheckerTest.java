@@ -1,6 +1,7 @@
 package nl.han.ica.icss.checker;
 
 import nl.han.ica.icss.ast.*;
+import nl.han.ica.icss.ast.literals.BoolLiteral;
 import nl.han.ica.icss.ast.literals.ColorLiteral;
 import nl.han.ica.icss.ast.literals.PercentageLiteral;
 import nl.han.ica.icss.ast.literals.PixelLiteral;
@@ -864,5 +865,132 @@ public class CheckerTest {
         ArrayList<SemanticError> errors = ast.getErrors();
         assertTrue(errors.isEmpty(),
                 "Multiplication with variable scalar should be allowed");
+    }
+
+    @Test
+    public void testCH06IfClauseWithBoolLiteralTrueShouldPass() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("p"));
+
+        IfClause ifClause = new IfClause();
+        ifClause.conditionalExpression = new BoolLiteral(true);
+        stylerule.body.add(ifClause);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.isEmpty(),
+                "If clause with boolean literal TRUE should not have error");
+    }
+
+    @Test
+    public void testCH06IfClauseWithBoolLiteralFalseShouldPass() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("p"));
+
+        IfClause ifClause = new IfClause();
+        ifClause.conditionalExpression = new BoolLiteral(false);
+        stylerule.body.add(ifClause);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.isEmpty(),
+                "If clause with boolean literal FALSE should not have error");
+    }
+
+    @Test
+    public void testCH06IfClauseWithNonBoolLiteralShouldError() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("p"));
+
+        IfClause ifClause = new IfClause();
+        ifClause.conditionalExpression = new PixelLiteral(100);
+        stylerule.body.add(ifClause);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.stream().anyMatch(e -> e.toString().contains("If clause condition must be of type boolean")),
+                "If clause with non-boolean literal should have error");
+    }
+
+    @Test
+    public void testCH06IfClauseWithBoolVariableShouldPass() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+
+        VariableAssignment varAssignment = new VariableAssignment();
+        varAssignment.name = new VariableReference("IsVisible");
+        varAssignment.expression = new BoolLiteral(true);
+        stylesheet.body.add(varAssignment);
+
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("p"));
+
+        IfClause ifClause = new IfClause();
+        ifClause.conditionalExpression = new VariableReference("IsVisible");
+        stylerule.body.add(ifClause);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.isEmpty(),
+                "If clause with boolean variable should not have error");
+    }
+
+    @Test
+    public void testCH06IfClauseWithNonBoolVariableShouldError() {
+        // Setup
+        Stylesheet stylesheet = new Stylesheet();
+
+        VariableAssignment varAssignment = new VariableAssignment();
+        varAssignment.name = new VariableReference("Width");
+        varAssignment.expression = new PixelLiteral(200);
+        stylesheet.body.add(varAssignment);
+
+        Stylerule stylerule = new Stylerule();
+        stylerule.selectors.add(new TagSelector("p"));
+
+        IfClause ifClause = new IfClause();
+        ifClause.conditionalExpression = new VariableReference("Width");
+        stylerule.body.add(ifClause);
+
+        stylesheet.body.add(stylerule);
+        ast.setRoot(stylesheet);
+
+        // Execute
+        checker.check(ast);
+
+        // Assert
+        ArrayList<SemanticError> errors = ast.getErrors();
+        assertTrue(errors.stream().anyMatch(e -> e.toString().contains("If clause condition must be of type boolean")),
+                "If clause with non-boolean variable should have error");
     }
 }
