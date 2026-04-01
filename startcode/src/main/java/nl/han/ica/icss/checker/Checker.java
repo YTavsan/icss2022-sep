@@ -47,7 +47,13 @@ public class Checker {
         } else if (node instanceof VariableAssignment) {
             setScopedVariableAssignment((VariableAssignment) node);
         } else if (node instanceof IfClause) {
-            // TODO checkIfClause((IfClause) node);
+            checkIfClause((IfClause) node);
+            // Add a new scope for the if-clause body
+            variableTypes.addFirst(new HashMap<>());
+            for (ASTNode child : node.getChildren()) {
+                checkNode(child);
+            }
+            variableTypes.removeFirst();
         } else if (node instanceof ElseClause) {
             // TODO checkElseClause((ElseClause) node);
         } else {
@@ -172,15 +178,11 @@ public class Checker {
     }
 
     private void checkIfClause(IfClause ifClause) {
-        if (ifClause.conditionalExpression instanceof VariableReference) {
-
-        }
-        if (ifClause.conditionalExpression instanceof BoolLiteral) {
-            if (!((BoolLiteral) ifClause.conditionalExpression).value) {
-                ifClause.setError("If clause condition is false, the block will never be executed.");
-            }
-        } else {
-            ifClause.setError("If clause condition must be a boolean literal or variable reference.");
+        ExpressionType conditionType = resolveExpressionType(ifClause.conditionalExpression, ifClause);
+        
+        // Condition must be of type BOOL
+        if (conditionType != ExpressionType.BOOL) {
+            ifClause.setError("If clause condition must be of type boolean");
         }
     }
 
