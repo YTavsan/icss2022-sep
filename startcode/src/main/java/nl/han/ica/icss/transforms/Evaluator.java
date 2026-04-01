@@ -34,9 +34,7 @@ public class Evaluator implements Transform {
             variableValues.removeFirst();
         } else if (node instanceof Stylerule) {
             variableValues.addFirst(new HashMap<>());
-            for (ASTNode child : node.getChildren()) {
-                evaluateNode(child);
-            }
+            evaluateStyleruleBody((Stylerule) node);
             variableValues.removeFirst();
         } else if (node instanceof Declaration) {
             Declaration declaration = (Declaration) node;
@@ -47,16 +45,7 @@ public class Evaluator implements Transform {
             variableAssignment.expression = value;
             variableValues.getFirst().put(variableAssignment.name.name, value);
         } else if (node instanceof IfClause) {
-            IfClause ifClause = (IfClause) node;
-            Literal condition = evaluateExpression(ifClause.conditionalExpression);
-            ifClause.conditionalExpression = condition;
-            if (condition instanceof BoolLiteral && ((BoolLiteral) condition).value) {
-                for (ASTNode child : ifClause.body) {
-                    evaluateNode(child);
-                }
-            } else if (ifClause.elseClause != null) {
-                evaluateNode(ifClause.elseClause);
-            }
+            evaluateIfClause((IfClause) node);
         } else if (node instanceof ElseClause) {
             ElseClause elseClause = (ElseClause) node;
             for (ASTNode child : elseClause.body) {
@@ -67,6 +56,57 @@ public class Evaluator implements Transform {
             for (ASTNode child : node.getChildren()) {
                 evaluateNode(child);
             }
+        }
+    }
+
+    // Function that evaluates the body of a stylerule, replacing variable references with literals.
+    private void evaluateStyleruleBody(Stylerule stylerule) {
+        for (int i = 0; i < stylerule.body.size(); i++) {
+            ASTNode child = stylerule.body.get(i);
+            if (child instanceof IfClause) {
+                IfClause ifClause = (IfClause) child;
+                Literal condition = evaluateExpression(ifClause.conditionalExpression);
+                ifClause.conditionalExpression = condition;
+
+                if (condition instanceof BoolLiteral && ((BoolLiteral) condition).value) {
+                    // Flatten the true branch into the parent body
+                    stylerule.body.remove(i);
+                    for (int j = 0; j < ifClause.body.size(); j++) {
+                        ASTNode bodyNode = ifClause.body.get(j);
+                        evaluateNode(bodyNode);
+                        stylerule.body.add(i + j, bodyNode);
+                    }
+                    i += ifClause.body.size() - 1;
+                } else if (ifClause.elseClause != null) {
+                    // Flatten the else branch into the parent body
+                    stylerule.body.remove(i);
+                    for (int j = 0; j < ifClause.elseClause.body.size(); j++) {
+                        ASTNode bodyNode = ifClause.elseClause.body.get(j);
+                        evaluateNode(bodyNode);
+                        stylerule.body.add(i + j, bodyNode);
+                    }
+                    i += ifClause.elseClause.body.size() - 1;
+                } else {
+                    // No condition matched and no else clause, remove the IfClause
+                    stylerule.body.remove(i);
+                    i--;
+                }
+            } else {
+                evaluateNode(child);
+            }
+        }
+    }
+
+    // Function that evaluates an IfClause, replacing variable references with literals.
+    private void evaluateIfClause(IfClause ifClause) {
+        Literal condition = evaluateExpression(ifClause.conditionalExpression);
+        ifClause.conditionalExpression = condition;
+        if (condition instanceof BoolLiteral && ((BoolLiteral) condition).value) {
+            for (ASTNode child : ifClause.body) {
+                evaluateNode(child);
+            }
+        } else if (ifClause.elseClause != null) {
+            evaluateNode(ifClause.elseClause);
         }
     }
 
