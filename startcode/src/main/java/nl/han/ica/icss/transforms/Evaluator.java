@@ -44,13 +44,6 @@ public class Evaluator implements Transform {
             Literal value = evaluateExpression(variableAssignment.expression);
             variableAssignment.expression = value;
             variableValues.getFirst().put(variableAssignment.name.name, value);
-        } else if (node instanceof IfClause) {
-            evaluateIfClause((IfClause) node);
-        } else if (node instanceof ElseClause) {
-            ElseClause elseClause = (ElseClause) node;
-            for (ASTNode child : elseClause.body) {
-                evaluateNode(child);
-            }
         } else {
             // For other nodes keep going through the children.
             for (ASTNode child : node.getChildren()) {
@@ -61,52 +54,44 @@ public class Evaluator implements Transform {
 
     // Function that evaluates the body of a stylerule, replacing variable references with literals.
     private void evaluateStyleruleBody(Stylerule stylerule) {
-        for (int i = 0; i < stylerule.body.size(); i++) {
-            ASTNode child = stylerule.body.get(i);
-            if (child instanceof IfClause) {
-                IfClause ifClause = (IfClause) child;
-                Literal condition = evaluateExpression(ifClause.conditionalExpression);
-                ifClause.conditionalExpression = condition;
+        // Keep processing until no more IfClauses are found (handles nested if statements)
+        boolean changed = true;
+        while (changed) {
+            changed = false;
+            for (int i = 0; i < stylerule.body.size(); i++) {
+                ASTNode child = stylerule.body.get(i);
+                if (child instanceof IfClause) {
+                    changed = true;
+                    IfClause ifClause = (IfClause) child;
+                    Literal condition = evaluateExpression(ifClause.conditionalExpression);
+                    ifClause.conditionalExpression = condition;
 
-                if (condition instanceof BoolLiteral && ((BoolLiteral) condition).value) {
-                    // Flatten the true branch into the parent body
-                    stylerule.body.remove(i);
-                    for (int j = 0; j < ifClause.body.size(); j++) {
-                        ASTNode bodyNode = ifClause.body.get(j);
-                        evaluateNode(bodyNode);
-                        stylerule.body.add(i + j, bodyNode);
+                    // If the condition is true, flatten the if clause into the parent body
+                    if (condition instanceof BoolLiteral && ((BoolLiteral) condition).value) {
+                        stylerule.body.remove(i);
+                        for (int j = 0; j < ifClause.body.size(); j++) {
+                            ASTNode bodyNode = ifClause.body.get(j);
+                            evaluateNode(bodyNode);
+                            stylerule.body.add(i + j, bodyNode);
+                        }
+                        break;
+                    } else if (ifClause.elseClause != null) {
+                        // If the condition is false, flatten the else clause into the parent body
+                        stylerule.body.remove(i);
+                        for (int j = 0; j < ifClause.elseClause.body.size(); j++) {
+                            ASTNode bodyNode = ifClause.elseClause.body.get(j);
+                            evaluateNode(bodyNode);
+                            stylerule.body.add(i + j, bodyNode);
+                        }
+                        break;
+                    } else {
+                        stylerule.body.remove(i);
+                        break;
                     }
-                    i += ifClause.body.size() - 1;
-                } else if (ifClause.elseClause != null) {
-                    // Flatten the else branch into the parent body
-                    stylerule.body.remove(i);
-                    for (int j = 0; j < ifClause.elseClause.body.size(); j++) {
-                        ASTNode bodyNode = ifClause.elseClause.body.get(j);
-                        evaluateNode(bodyNode);
-                        stylerule.body.add(i + j, bodyNode);
-                    }
-                    i += ifClause.elseClause.body.size() - 1;
                 } else {
-                    // No condition matched and no else clause, remove the IfClause
-                    stylerule.body.remove(i);
-                    i--;
+                    evaluateNode(child);
                 }
-            } else {
-                evaluateNode(child);
             }
-        }
-    }
-
-    // Function that evaluates an IfClause, replacing variable references with literals.
-    private void evaluateIfClause(IfClause ifClause) {
-        Literal condition = evaluateExpression(ifClause.conditionalExpression);
-        ifClause.conditionalExpression = condition;
-        if (condition instanceof BoolLiteral && ((BoolLiteral) condition).value) {
-            for (ASTNode child : ifClause.body) {
-                evaluateNode(child);
-            }
-        } else if (ifClause.elseClause != null) {
-            evaluateNode(ifClause.elseClause);
         }
     }
 
